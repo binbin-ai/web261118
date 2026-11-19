@@ -76,14 +76,14 @@ const posterUrl = (path, size) => {
 console.log(posterUrl(movies[0].poster, "w342"));
 
 // renderCards : 영화 배열 ⇒ 보드에 카드 생성(반환값 없음) 
-const renderCards = (list) =>  {
+const renderCards = (list) => {
     const board = document.querySelector(".board");
     board.innerHTML = "";
     for (const m of list) {
         const card = document.createElement("article");
         card.className = "card";
         card.dataset.id = m.id;
-        card.onclick = function(){ alert(m.overview); };
+        card.onclick = function () { alert(m.overview); };
         if (m.rating >= 8) {
             card.classList.add("hot");
         }
@@ -92,28 +92,71 @@ const renderCards = (list) =>  {
       <span class="badge">${m.rating}</span> 
       <div class="info"> 
         <h2>${m.title}</h2> 
-        <p class="year">${m.year}</p> 
+        <p class="year">${m.year}</p>
+        <button class="like" type="button">♥</button>
       </div>`;
         board.appendChild(card);
     }
     document.querySelector("#count").textContent = list.length + "편";
+    updateLikeCount();
+    if (list.length === 0) {
+        board.classList.add("is-empty");
+    }else{
+        board.classList.remove("is-empty");
+    }
 }
 
 
 const sortBy = (list, key, desc) => {
- const copy = [...list];
- copy.sort((a, b) => {
- if (typeof a[key] === "string") return a[key].localeCompare(b[key]);
- return a[key] - b[key];
- });
- if (desc) copy.reverse();
- return copy;
+    const copy = [...list];
+    copy.sort((a, b) => {
+        if (typeof a[key] === "string") return a[key].localeCompare(b[key]);
+        return a[key] - b[key];
+    });
+    if (desc) copy.reverse();
+    return copy;
 }
- 
+
 // applySort : 선택 상자 값으로 정렬해서 다시 그리기(반환값 없음)
 const applySort = () => {
- const key = document.getElementById("sort").value;
- renderCards(sortBy(movies, key, key !== "title"));
+    renderCards(getView());
 }
 
 applySort();
+
+// 검색창 : 글자를 칠 때마다 해당 글자에 맞게 프론트 뷰 다시 그리기
+document.getElementById("q").addEventListener("input", (e) => {
+    if(e.key === "Escape"){
+        e.target.value = "";
+        renderCards(getView());
+    }else{
+        renderCards(getView());
+    }
+    
+});
+
+// html에서 onchange 속성으로 함수를 호출하는 것이아닌 JS에서 해당 id를 가진 요소를 찾아 함수 삽입
+document.getElementById("sort").addEventListener("change", applySort);
+
+// 뷰의 모든 기능이 렌더링되게 하는 코드
+function getView() {
+    const keyword = document.getElementById("q").value.trim().toLowerCase();
+    const found = movies.filter(m => m.title.toLowerCase().includes(keyword));
+    const key = document.getElementById("sort").value;
+    return sortBy(found, key, key != "title");
+}
+
+// 찜 기능
+// function (e)를 쓰면 this가 보드이고, e.target은 하트 버튼인데 반해
+// 화살표 함수인 (e) => {}로 쓰면 this가 window이고, e.target은 하트 버튼
+document.querySelector(".board").addEventListener("click", (e)=>{
+    console.log(this, e.target)
+    if(e.target.classList.contains("like")){
+        e.target.classList.toggle("liked");
+        updateLikeCount();
+    }
+})
+
+function updateLikeCount() {
+    document.getElementById("likeCount").textContent = document.querySelectorAll(".liked").length;
+}
