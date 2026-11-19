@@ -75,7 +75,8 @@ const posterUrl = (path, size) => {
 
 console.log(posterUrl(movies[0].poster, "w342"));
 
-// renderCards : 영화 배열 ⇒ 보드에 카드 생성(반환값 없음) 
+// renderCards : 영화 배열 ⇒ 보드에 카드 생성(반환값 없음)
+const liked = JSON.parse(localStorage.getItem("liked") || "[]");
 const renderCards = (list) => {
     const board = document.querySelector(".board");
     board.innerHTML = "";
@@ -83,6 +84,8 @@ const renderCards = (list) => {
         const card = document.createElement("article");
         card.className = "card";
         card.dataset.id = m.id;
+        card.setAttribute("data-type", m.type);
+        card.setAttribute("data-title", m.title);
         card.onclick = function () { alert(m.overview); };
         if (m.rating >= 8) {
             card.classList.add("hot");
@@ -96,6 +99,11 @@ const renderCards = (list) => {
         <button class="like" type="button">♥</button>
       </div>`;
         board.appendChild(card);
+        if(liked.includes(m.title)){
+            card.querySelector(".like").className = "like liked";
+        }else{
+            card.querySelector(".like").className = "like";
+        }
     }
     document.querySelector("#count").textContent = list.length + "편";
     updateLikeCount();
@@ -104,6 +112,7 @@ const renderCards = (list) => {
     }else{
         board.classList.remove("is-empty");
     }
+    document.getElementById("likeCount").textContent = liked.length;
 }
 
 
@@ -150,13 +159,36 @@ function getView() {
 // function (e)를 쓰면 this가 보드이고, e.target은 하트 버튼인데 반해
 // 화살표 함수인 (e) => {}로 쓰면 this가 window이고, e.target은 하트 버튼
 document.querySelector(".board").addEventListener("click", (e)=>{
-    console.log(this, e.target)
-    if(e.target.classList.contains("like")){
-        e.target.classList.toggle("liked");
-        updateLikeCount();
+    const card = e.target.closest(".card");
+    if(!card){
+        return;
+    }
+
+    const title = card.getAttribute("data-title")
+
+    // 찜 버튼 클릭
+    if(e.target.closest(".like")){
+        const i = liked.indexOf(title);
+        if (i === -1) {
+            liked.push(title);
+        }else{
+            liked.splice(i, 1);
+        }
+        saveLiked();
+        applySort(); // 실습과제 #3 에서는 리프레시로 변경
+        return;
     }
 })
 
+// 다크 모드 기능
+document.getElementById("themeToggle").addEventListener("click", () => {
+    document.body.classList.toggle("dark");
+});
+
 function updateLikeCount() {
     document.getElementById("likeCount").textContent = document.querySelectorAll(".liked").length;
+}
+
+function saveLiked() {
+    localStorage.setItem("liked", JSON.stringify(liked));
 }
